@@ -1,5 +1,6 @@
 const userModel = require('../models/user.models')
 const jwt = require('jsonwebtoken')
+const emailService = require('../services/email.services')  
 
 async function register(req, res){
   const {email, name, password} = req.body
