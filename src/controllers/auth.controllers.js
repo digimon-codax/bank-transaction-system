@@ -26,6 +26,7 @@ async function register(req, res){
 
     },token
   })
+  await emailService.sendRegistrationEmail(user.email, user.name)
 }
 
 async function login(req, res){

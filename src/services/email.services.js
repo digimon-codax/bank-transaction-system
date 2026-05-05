@@ -46,7 +46,7 @@ async function sendRegistrationEmail(userEmail, name){
   const text = `Hello ${name},\n\nThank you for registering with our Bank Transaction System. We are excited to have you on board!\n\nBest regards,\nBank Transaction System Team`;
   const html = `<p>Hello ${name},</p><p>Thank you for registering with our Bank Transaction System. We are excited to have you on board!</p><p>Best regards,<br>Bank Transaction System Team</p>`;
 
-  await sendEmail(userEmail, subject, text, html)
+  await sendEmail(userEmail, subject, text, html);
 }
 
 module.exports = {sendRegistrationEmail}
