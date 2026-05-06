@@ -18,7 +18,9 @@ async function register(req, res){
 
   const token = jwt.sign({id: user._id}, process.env.JWT_SECRET)
   res.cookie('token', token)
-  return res.status(201).json({message: "User registered successfully",
+  
+
+  res.status(201).json({message: "User registered successfully",
     user:{
       id: user._id,
       name: user.name,
