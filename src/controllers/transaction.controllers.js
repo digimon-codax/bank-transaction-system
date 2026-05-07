@@ -83,3 +83,5 @@ async function createTransaction(req, res){
   res.status(201).json({message: "Transaction completed successfully", transaction})
 
 }
+
+module.exports = {createTransaction}

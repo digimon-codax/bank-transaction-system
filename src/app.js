@@ -2,6 +2,7 @@ const express = require ('express')
 const authRoutes = require('./routes/auth.routes')
 const accountRoutes = require('./routes/account.routes')
 const cookieParser = require('cookie-parser')
+const transactionRoutes = require('./routes/transaction.routes')
 
 const app = express()
 
