@@ -48,15 +48,17 @@ async function createTransaction(req, res){
     return res.status(400).json({message: `Insufficient balance in from account. Current balance is ${balance}. Requested amount is ${amount}.`})
   }
 
+  let transaction;
+  try{
   const session = await transactionModel.startSession()
   session.startTransaction()
-  const transaction = new transactionModel({
+  transaction = (await transactionModel.create([{
     fromAccount,
     toAccount,
     amount,
     idempotencyKey,
     status: 'PENDING'
-  })
+  }], {session}))[0]
 
   const debitLedgerEntry = await ledgerModel.create([{
     account: fromAccount,
@@ -64,6 +66,10 @@ async function createTransaction(req, res){
     amount,
     transaction: transaction._id
   }], {session})
+
+  await(() => {
+    return new Promise((resolve) => setTimeout(resolve, 15*1000))
+  })()
   
   const creditLedgerEntry = await ledgerModel.create([{
     account: toAccount,
@@ -72,17 +78,24 @@ async function createTransaction(req, res){
     transaction: transaction._id
   }], {session})
 
-  transaction.status = 'COMPLETED'
-  await transaction.save({session})
+  
+  await transactionModel.findOneAndUpdate(
+    {_id: transaction._id}, 
+    {status: 'COMPLETED'}, 
+    {session}
+  )
 
   await session.commitTransaction()
   session.endSession()
+}catch(err){
+  return res.status(400).json({message: "Transaction is pending due to some issue. Please retry after some time"})
+}
+await emailService.sendTransactionEmail(req.user.email, req.user.name, amount, fromAcc._id, toAcc._id)
 
-  await emailService.sendTransactionEmail(req.user.email, req.user.name, amount, fromAcc._id, toAcc._id)
-
-  res.status(201).json({message: "Transaction completed successfully", transaction})
+res.status(201).json({message: "Transaction completed successfully", transaction: transaction})
 
 }
+
 
 async function createInitialFundsTransaction(req, res){
   const{toAccount, amount, idempotencyKey} = req.body
