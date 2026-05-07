@@ -84,4 +84,48 @@ async function createTransaction(req, res){
 
 }
 
-module.exports = {createTransaction}
+async function createInitialFundsTransaction(req, res){
+  const{toAccount, amount, idempotencyKey} = req.body
+
+  if(!toAccount || !amount || !idempotencyKey){
+    return res.status(422).json({message: "All fields are required"})
+  }
+
+  const toAcc = await accountModel.findById(toAccount)
+  if(!toAcc){
+    return res.status(400).json({message: "Invalid to account ID"})
+  }
+  const fromAcc = await accountModel.findOne({systemUser: true, user: req.user._id})
+  if(!fromAcc){
+    return res.status(400).json({message: "System account not found for the user"})
+  }
+
+  const session = await mongoose.startSession()
+  session.startTransaction()
+  const transaction = await transactionModel.create({
+    fromAccount: fromAcc._id,
+    toAccount,
+    amount,
+    idempotencyKey,
+    status: 'PENDING'
+  }, {session})
+  const debitLedgerEntry = await ledgerModel.create({
+    account: fromAcc._id,
+    type: 'DEBIT',
+    amount,
+    transaction: transaction._id
+  }, {session})
+  const creditLedgerEntry = await ledgerModel.create({
+    account: toAccount,
+    type: 'CREDIT',
+    amount,
+    transaction: transaction._id
+  }, {session})
+  transaction.status = 'COMPLETED'
+  await transaction.save({session})
+  await session.commitTransaction()
+  session.endSession()
+  res.status(201).json({message: "Initial funds transaction completed successfully", transaction})
+}
+
+module.exports = {createTransaction, createInitialFundsTransaction}
