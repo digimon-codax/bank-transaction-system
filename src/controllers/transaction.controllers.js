@@ -95,32 +95,32 @@ async function createInitialFundsTransaction(req, res){
   if(!toAcc){
     return res.status(400).json({message: "Invalid to account ID"})
   }
-  const fromAcc = await accountModel.findOne({systemUser: true, user: req.user._id})
+  const fromAcc = await accountModel.findOne({user: req.user._id})
   if(!fromAcc){
     return res.status(400).json({message: "System account not found for the user"})
   }
 
   const session = await mongoose.startSession()
   session.startTransaction()
-  const transaction = await transactionModel.create({
+  const transaction = new transactionModel({
     fromAccount: fromAcc._id,
     toAccount,
     amount,
     idempotencyKey,
     status: 'PENDING'
-  }, {session})
-  const debitLedgerEntry = await ledgerModel.create({
+  })
+  const debitLedgerEntry = await ledgerModel.create([{
     account: fromAcc._id,
     type: 'DEBIT',
     amount,
     transaction: transaction._id
-  }, {session})
-  const creditLedgerEntry = await ledgerModel.create({
+  }], {session})
+  const creditLedgerEntry = await ledgerModel.create([{
     account: toAccount,
     type: 'CREDIT',
     amount,
     transaction: transaction._id
-  }, {session})
+  }], {session})
   transaction.status = 'COMPLETED'
   await transaction.save({session})
   await session.commitTransaction()

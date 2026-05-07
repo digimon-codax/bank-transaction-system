@@ -5,6 +5,7 @@ const accountController = require('../controllers/account.controller')
 const router = express.Router()
 
 router.post('/', authMiddleware.authMiddleware, accountController.createAccount)
+router.get('/', authMiddleware.authMiddleware, accountController.getUserAccounts)
 
 module.exports = router
 
