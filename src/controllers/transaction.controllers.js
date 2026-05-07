@@ -45,32 +45,32 @@ async function createTransaction(req, res){
   const balance = await fromAcc.getBalance()
 
   if(balance < amount){
-    return res.status(400).json({message: 'Insufficient balance in from account. Current balance is ${balance}. Requested amount is ${amount}.'})
+    return res.status(400).json({message: `Insufficient balance in from account. Current balance is ${balance}. Requested amount is ${amount}.`})
   }
 
   const session = await transactionModel.startSession()
   session.startTransaction()
-  const transaction = await transactionModel.create({
+  const transaction = new transactionModel({
     fromAccount,
     toAccount,
     amount,
     idempotencyKey,
     status: 'PENDING'
-  }, {session})
+  })
 
-  const debitLedgerEntry = await ledgerModel.create({
+  const debitLedgerEntry = await ledgerModel.create([{
     account: fromAccount,
     type: 'DEBIT',
     amount,
     transaction: transaction._id
-  }, {session})
+  }], {session})
   
-  const creditLedgerEntry = await ledgerModel.create({
+  const creditLedgerEntry = await ledgerModel.create([{
     account: toAccount,
     type: 'CREDIT',
     amount,
     transaction: transaction._id
-  }, {session})
+  }], {session})
 
   transaction.status = 'COMPLETED'
   await transaction.save({session})
